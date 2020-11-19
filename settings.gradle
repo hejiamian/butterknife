@@ -1,3 +1,4 @@
+include ':butterknife-annotations-kotlin'
 include ':butterknife'
 include ':butterknife-annotations'
 include ':butterknife-compiler'
