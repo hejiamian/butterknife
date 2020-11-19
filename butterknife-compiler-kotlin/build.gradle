@@ -1,0 +1,37 @@
+plugins {
+    id 'java-library'
+    id 'kotlin'
+    id 'kotlin-kapt'
+    id 'kotlin-android-extensions'
+    id 'checkstyle'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+dependencies {
+    implementation project(':butterknife-annotations-kotlin')
+    implementation deps.auto.common
+    implementation deps.guava
+    api deps.javapoet
+    compileOnly deps.auto.service
+    kapt deps.auto.service
+    compileOnly files(org.gradle.internal.jvm.Jvm.current().getToolsJar())
+
+    api deps.incap.runtime
+    compileOnly deps.incap.processor
+
+    testImplementation deps.junit
+    testImplementation deps.truth
+}
+
+checkstyle {
+    configFile rootProject.file('checkstyle.xml')
+    showViolations true
+    //Remove this when tests are less verbose, i.e. using JavaPoet
+    sourceSets = [sourceSets.main]
+}
+
+//apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
