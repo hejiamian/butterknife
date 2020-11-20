@@ -133,7 +133,7 @@ class BindingSet(private val targetTypeName: TypeName?, private val bindingClass
     }
 
     private fun createType(sdk: Int, debuggable: Boolean): TypeSpec {
-        val result = TypeSpec.classBuilder(bindingClassName!!.simpleName())
+        val result = TypeSpec.classBuilder(bindingClassName.simpleName())
                 .addModifiers(Modifier.PUBLIC)
                 .addOriginatingElement(enclosingElement)
         if (isFinal) result.addModifiers(Modifier.FINAL)
@@ -373,20 +373,20 @@ class BindingSet(private val targetTypeName: TypeName?, private val bindingClass
             val builder = CodeBlock.builder()
             binding.fieldBinding?.let {
                 builder.add("target.\$L = ", it.name)
-                val requiresCast: Boolean = requiresCast(it.type)
-                if (!debuggable || !requiresCast && !it.isRequired) {
-                    if (requiresCast) builder.add("(\$T) ", it.type)
+//                val requiresCast: Boolean = requiresCast(it.type)
+//                if (!debuggable || !requiresCast && !it.isRequired) {
+//                    if (requiresCast) builder.add("(\$T) ", it.type)
                     builder.add("source.findViewById(\$L)", binding.id.code)
-                } else {
-                    builder.add("\$T.find", UTILS)
-                    builder.add(if (it.isRequired) "RequiredView" else "OptionalView")
-                    if (requiresCast) builder.add("AsType")
-                    builder.add("(source, \$L", binding.id.code)
-
-                    if (it.isRequired || requiresCast) builder.add(", \$S", asHumanDescription(listOf(it)))
-                    if (requiresCast) builder.add(", \$T.class", it.rawType)
-                    builder.add(")")
-                }
+//                } else {
+//                    builder.add("\$T.find", UTILS)
+//                    builder.add(if (it.isRequired) "RequiredView" else "OptionalView")
+//                    if (requiresCast) builder.add("AsType")
+//                    builder.add("(source, \$L", binding.id.code)
+//
+//                    if (it.isRequired || requiresCast) builder.add(", \$S", asHumanDescription(listOf(it)))
+//                    if (requiresCast) builder.add(", \$T.class", it.rawType)
+//                    builder.add(")")
+//                }
             }
 
             result.addStatement("\$L", builder.build())

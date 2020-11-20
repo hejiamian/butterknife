@@ -253,7 +253,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 javaFile.writeTo(filer)
             } catch (e: IOException) {
-                error(typeElement, "Unable to write binding for type %s: %s", typeElement, e.message)
+                e.printStackTrace()
             }
         }
         return false
@@ -269,7 +269,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 parseResourceAnimation(element, builderMap, erasedTargetNames)
             } catch (e: Exception) {
-                logParsingError(element, BindAnim::class.java, e)
+                e.printStackTrace()
             }
         }
 
@@ -279,7 +279,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 parseResourceArray(element, builderMap, erasedTargetNames)
             } catch (e: Exception) {
-                logParsingError(element, BindArray::class.java, e)
+                e.printStackTrace()
             }
         }
 
@@ -289,7 +289,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 parseResourceBitmap(element, builderMap, erasedTargetNames)
             } catch (e: Exception) {
-                logParsingError(element, BindBitmap::class.java, e)
+                e.printStackTrace()
             }
         }
 
@@ -299,7 +299,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 parseResourceBool(element, builderMap, erasedTargetNames)
             } catch (e: Exception) {
-                logParsingError(element, BindBool::class.java, e)
+                e.printStackTrace()
             }
         }
 
@@ -309,7 +309,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 parseResourceColor(element, builderMap, erasedTargetNames)
             } catch (e: Exception) {
-                logParsingError(element, BindColor::class.java, e)
+                e.printStackTrace()
             }
         }
 
@@ -319,7 +319,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 parseResourceDimen(element, builderMap, erasedTargetNames)
             } catch (e: Exception) {
-                logParsingError(element, BindDimen::class.java, e)
+                e.printStackTrace()
             }
         }
 
@@ -329,7 +329,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 parseResourceDrawable(element, builderMap, erasedTargetNames)
             } catch (e: Exception) {
-                logParsingError(element, BindDrawable::class.java, e)
+                e.printStackTrace()
             }
         }
 
@@ -339,7 +339,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 parseResourceFloat(element, builderMap, erasedTargetNames)
             } catch (e: Exception) {
-                logParsingError(element, BindFloat::class.java, e)
+                e.printStackTrace()
             }
         }
 
@@ -349,7 +349,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 parseResourceFont(element, builderMap, erasedTargetNames)
             } catch (e: Exception) {
-                logParsingError(element, BindFont::class.java, e)
+                e.printStackTrace()
             }
         }
 
@@ -359,7 +359,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 parseResourceInt(element, builderMap, erasedTargetNames)
             } catch (e: Exception) {
-                logParsingError(element, BindInt::class.java, e)
+                e.printStackTrace()
             }
         }
 
@@ -369,7 +369,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 parseResourceString(element, builderMap, erasedTargetNames)
             } catch (e: Exception) {
-                logParsingError(element, BindString::class.java, e)
+                e.printStackTrace()
             }
         }
 
@@ -391,7 +391,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
             try {
                 parseBindViews(element, builderMap, erasedTargetNames)
             } catch (e: Exception) {
-                logParsingError(element, BindViews::class.java, e)
+                e.printStackTrace()
             }
         }
 
@@ -399,12 +399,12 @@ class ButterKnifeProcessor : AbstractProcessor() {
         for (listener in LISTENERS) {
             findAndParseListener(env, listener, builderMap, erasedTargetNames)
         }
-        val classpathBindings: MutableMap<TypeElement, ClasspathBindingSet> = findAllSupertypeBindings(builderMap, erasedTargetNames)
-
         // Associate superclass binders with their subclass binders. This is a queue-based tree walk
         // which starts at the roots (superclasses) and walks to the leafs (subclasses).
+
+        val classpathBindings: MutableMap<TypeElement, ClasspathBindingSet> = findAllSupertypeBindings(builderMap, erasedTargetNames)
         val entries: Deque<Map.Entry<TypeElement, BindingSet.Builder>> = ArrayDeque(builderMap.entries)
-        val bindingMap: MutableMap<TypeElement, BindingSet> = LinkedHashMap()
+        val bindingMap: MutableMap<TypeElement, BindingSet> = mutableMapOf()
         while (entries.isNotEmpty()) {
             val entry = entries.removeFirst()
             val type = entry.key
@@ -432,39 +432,22 @@ class ButterKnifeProcessor : AbstractProcessor() {
                                 e: java.lang.Exception) {
         val stackTrace = StringWriter()
         e.printStackTrace(PrintWriter(stackTrace))
-        error(element, "Unable to parse @%s binding.\n\n%s", annotation.simpleName, stackTrace)
     }
 
     private fun isInaccessibleViaGeneratedCode(annotationClass: Class<out Annotation?>,
                                                targetThing: String, element: Element): Boolean {
-        var hasError = false
         val enclosingElement = element.enclosingElement as TypeElement
 
-        // Verify field or method modifiers.
+//        // Verify field or method modifiers.
         val modifiers = element.modifiers
-        if (modifiers.contains(Modifier.PRIVATE) || modifiers.contains(Modifier.STATIC)) {
-            error(element, "@%s %s must not be private or static. (%s.%s)",
-                    annotationClass.simpleName, targetThing, enclosingElement.qualifiedName,
-                    element.simpleName)
-            hasError = true
-        }
+        if (modifiers.contains(Modifier.PRIVATE) || modifiers.contains(Modifier.STATIC)) return true
 
         // Verify containing type.
-        if (enclosingElement.kind != ElementKind.CLASS) {
-            error(enclosingElement, "@%s %s may only be contained in classes. (%s.%s)",
-                    annotationClass.simpleName, targetThing, enclosingElement.qualifiedName,
-                    element.simpleName)
-            hasError = true
-        }
+        if (enclosingElement.kind != ElementKind.CLASS) return true
 
         // Verify containing class visibility is not private.
-        if (enclosingElement.modifiers.contains(Modifier.PRIVATE)) {
-            error(enclosingElement, "@%s %s may not be contained in private classes. (%s.%s)",
-                    annotationClass.simpleName, targetThing, enclosingElement.qualifiedName,
-                    element.simpleName)
-            hasError = true
-        }
-        return hasError
+        if (enclosingElement.modifiers.contains(Modifier.PRIVATE)) return true
+        return false
     }
 
     private fun isBindingInWrongPackage(annotationClass: Class<out Annotation?>,
@@ -472,13 +455,9 @@ class ButterKnifeProcessor : AbstractProcessor() {
         val enclosingElement = element.enclosingElement as TypeElement
         val qualifiedName = enclosingElement.qualifiedName.toString()
         if (qualifiedName.startsWith("android.")) {
-            error(element, "@%s-annotated class incorrectly in Android framework package. (%s)",
-                    annotationClass.simpleName, qualifiedName)
             return true
         }
         if (qualifiedName.startsWith("java.")) {
-            error(element, "@%s-annotated class incorrectly in Java framework package. (%s)",
-                    annotationClass.simpleName, qualifiedName)
             return true
         }
         return false
@@ -487,8 +466,8 @@ class ButterKnifeProcessor : AbstractProcessor() {
     private fun parseBindView(element: Element, builderMap: MutableMap<TypeElement, BindingSet.Builder>,
                               erasedTargetNames: MutableSet<TypeElement>) {
         val enclosingElement = element.enclosingElement as TypeElement
-
-        // Start by verifying common generated code restrictions.
+//
+//        // Start by verifying common generated code restrictions.
         var hasError = (isInaccessibleViaGeneratedCode(BindView::class.java, "fields", element)
                 || isBindingInWrongPackage(BindView::class.java, element))
 
@@ -498,22 +477,17 @@ class ButterKnifeProcessor : AbstractProcessor() {
             val typeVariable = elementType as TypeVariable
             elementType = typeVariable.upperBound
         }
-        val qualifiedName = enclosingElement.qualifiedName
+
         val simpleName = element.simpleName
-        if (!ButterKnifeProcessor.isSubtypeOfType(elementType, VIEW_TYPE) && !isInterface(elementType)) {
+        if (!isSubtypeOfType(elementType, VIEW_TYPE) && !isInterface(elementType)) {
             if (elementType.kind == TypeKind.ERROR) {
-                note(element, "@%s field with unresolved type (%s) "
-                        + "must elsewhere be generated as a View or interface. (%s.%s)",
-                        BindView::class.java.simpleName, elementType, qualifiedName, simpleName)
             } else {
-                error(element, "@%s fields must extend from View or be an interface. (%s.%s)",
-                        BindView::class.java.simpleName, qualifiedName, simpleName)
                 hasError = true
             }
         }
-        if (hasError) {
-            return
-        }
+//        if (hasError) {
+//            return
+//        }
 
         // Assemble information on the field.
         val id: Int = element.getAnnotation(BindView::class.java).value
@@ -522,9 +496,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
         if (builder != null) {
             val existingBindingName = builder.findExistingBindingName(resourceId)
             if (existingBindingName != null) {
-                error(element, "Attempt to use @%s for an already bound ID %d on '%s'. (%s.%s)",
-                        BindView::class.java.simpleName, id, existingBindingName,
-                        enclosingElement.qualifiedName, element.simpleName)
                 return
             }
         } else {
@@ -532,7 +503,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
         }
         val name = simpleName.toString()
         val type = TypeName.get(elementType)
-        val required: Boolean = ButterKnifeProcessor.isFieldRequired(element)
+        val required: Boolean = isFieldRequired(element)
         builder.addField(resourceId!!, FieldViewBinding(name, type, required))
 
         // Add the type-erased version to the valid binding targets set.
@@ -563,9 +534,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
                 val declaredType = elementType as DeclaredType
                 val typeArguments = declaredType.typeArguments
                 if (typeArguments.size != 1) {
-                    error(element, "@%s List must have a generic component. (%s.%s)",
-                            BindViews::class.java.simpleName, enclosingElement.qualifiedName,
-                            element.simpleName)
                     hasError = true
                 } else {
                     viewType = typeArguments[0]
@@ -573,8 +541,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
                 kind = FieldCollectionViewBinding.Kind.LIST
             }
             else -> {
-                error(element, "@%s must be a List or array. (%s.%s)", BindViews::class.java.simpleName,
-                        enclosingElement.qualifiedName, element.simpleName)
                 hasError = true
             }
         }
@@ -585,32 +551,17 @@ class ButterKnifeProcessor : AbstractProcessor() {
 
         // Verify that the target type extends from View.
         if (viewType != null && !isSubtypeOfType(viewType, VIEW_TYPE) && !isInterface(viewType)) {
-            if (viewType.kind == TypeKind.ERROR) {
-                note(element, "@%s List or array with unresolved type (%s) "
-                        + "must elsewhere be generated as a View or interface. (%s.%s)",
-                        BindViews::class.java.simpleName, viewType, enclosingElement.qualifiedName,
-                        element.simpleName)
-            } else {
-                error(element, "@%s List or array type must extend from View or be an interface. (%s.%s)",
-                        BindViews::class.java.simpleName, enclosingElement.qualifiedName,
-                        element.simpleName)
-                hasError = true
-            }
+            hasError = viewType.kind != TypeKind.ERROR
         }
 
         // Assemble information on the field.
         val name = element.simpleName.toString()
         val ids: IntArray = element.getAnnotation(BindViews::class.java).value
         if (ids.isEmpty()) {
-            error(element, "@%s must specify at least one ID. (%s.%s)", BindViews::class.java.simpleName,
-                    enclosingElement.qualifiedName, element.simpleName)
             hasError = true
         }
         val duplicateId: Int? = findDuplicate(ids)
         duplicateId?.let {
-            error(element, "@%s annotation contains duplicate ID %d. (%s.%s)",
-                    BindViews::class.java.simpleName, duplicateId, enclosingElement.qualifiedName,
-                    element.simpleName)
             hasError = true
         }
         if (!hasError) {
@@ -631,9 +582,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
 
         // Verify that the target type is Animation.
         if (ANIMATION_TYPE != element.asType().toString()) {
-            error(element, "@%s field type must be 'Animation'. (%s.%s)",
-                    BindAnim::class.java.simpleName, enclosingElement.qualifiedName,
-                    element.simpleName)
             hasError = true
         }
 
@@ -660,9 +608,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
 
         // Verify that the target type is bool.
         if (element.asType().kind != TypeKind.BOOLEAN) {
-            error(element, "@%s field type must be 'boolean'. (%s.%s)",
-                    BindBool::class.java.simpleName, enclosingElement.qualifiedName,
-                    element.simpleName)
             hasError = true
         }
 
@@ -694,9 +639,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
         if (COLOR_STATE_LIST_TYPE == elementType.toString()) {
             isColorStateList = true
         } else if (elementType.kind != TypeKind.INT) {
-            error(element, "@%s field type must be 'int' or 'ColorStateList'. (%s.%s)",
-                    BindColor::class.java.simpleName, enclosingElement.qualifiedName,
-                    element.simpleName)
             hasError = true
         }
 
@@ -732,18 +674,15 @@ class ButterKnifeProcessor : AbstractProcessor() {
         if (elementType.kind == TypeKind.INT) {
             isInt = true
         } else if (elementType.kind != TypeKind.FLOAT) {
-            error(element, "@%s field type must be 'int' or 'float'. (%s.%s)",
-                    BindDimen::class.java.simpleName, enclosingElement.qualifiedName,
-                    element.simpleName)
             hasError = true
         }
 
         // Verify common generated code restrictions.
         hasError = hasError or isInaccessibleViaGeneratedCode(BindDimen::class.java, "fields", element)
         hasError = hasError or isBindingInWrongPackage(BindDimen::class.java, element)
-        if (hasError) {
-            return
-        }
+//        if (hasError) {
+//            return
+//        }
 
         // Assemble information on the field.
         val name = element.simpleName.toString()
@@ -762,9 +701,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
 
         // Verify that the target type is Bitmap.
         if (BITMAP_TYPE != element.asType().toString()) {
-            error(element, "@%s field type must be 'Bitmap'. (%s.%s)",
-                    BindBitmap::class.java.simpleName, enclosingElement.qualifiedName,
-                    element.simpleName)
             hasError = true
         }
 
@@ -792,9 +728,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
 
         // Verify that the target type is Drawable.
         if (DRAWABLE_TYPE != element.asType().toString()) {
-            error(element, "@%s field type must be 'Drawable'. (%s.%s)",
-                    BindDrawable::class.java.simpleName, enclosingElement.qualifiedName,
-                    element.simpleName)
             hasError = true
         }
 
@@ -827,9 +760,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
 
         // Verify that the target type is float.
         if (element.asType().kind != TypeKind.FLOAT) {
-            error(element, "@%s field type must be 'float'. (%s.%s)",
-                    BindFloat::class.java.simpleName, enclosingElement.qualifiedName,
-                    element.simpleName)
             hasError = true
         }
 
@@ -857,9 +787,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
 
         // Verify that the target type is a Typeface.
         if (TYPEFACE_TYPE != element.asType().toString()) {
-            error(element, "@%s field type must be 'Typeface'. (%s.%s)",
-                    BindFont::class.java.simpleName, enclosingElement.qualifiedName,
-                    element.simpleName)
             hasError = true
         }
 
@@ -873,8 +800,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
         val styleValue: Int = bindFont.style
         val style = FieldTypefaceBinding.TypefaceStyles.fromValue(styleValue)
         if (style == null) {
-            error(element, "@%s style must be NORMAL, BOLD, ITALIC, or BOLD_ITALIC. (%s.%s)",
-                    BindFont::class.java.simpleName, enclosingElement.qualifiedName, name)
             hasError = true
         }
         if (hasError) {
@@ -893,8 +818,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
 
         // Verify that the target type is int.
         if (element.asType().kind != TypeKind.INT) {
-            error(element, "@%s field type must be 'int'. (%s.%s)", BindInt::class.java.simpleName,
-                    enclosingElement.qualifiedName, element.simpleName)
             hasError = true
         }
 
@@ -922,9 +845,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
 
         // Verify that the target type is String.
         if (STRING_TYPE != element.asType().toString()) {
-            error(element, "@%s field type must be 'String'. (%s.%s)",
-                    BindString::class.java.simpleName, enclosingElement.qualifiedName,
-                    element.simpleName)
             hasError = true
         }
 
@@ -952,13 +872,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
 
         // Verify that the target type is supported.
         val type = getArrayResourceMethodName(element)
-        if (type == null) {
-            error(element,
-                    "@%s field type must be one of: String[], int[], CharSequence[], %s. (%s.%s)",
-                    BindArray::class.java.simpleName, TYPED_ARRAY_TYPE, enclosingElement.qualifiedName,
-                    element.simpleName)
-            hasError = true
-        }
+        if (type == null) hasError = true
 
         // Verify common generated code restrictions.
         hasError = hasError or isInaccessibleViaGeneratedCode(BindArray::class.java, "fields", element)
@@ -998,8 +912,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
             } catch (e: java.lang.Exception) {
                 val stackTrace = StringWriter()
                 e.printStackTrace(PrintWriter(stackTrace))
-                error(element, "Unable to generate view binder for @%s.\n\n%s",
-                        annotationClass.simpleName, stackTrace.toString())
             }
         }
     }
@@ -1024,27 +936,15 @@ class ButterKnifeProcessor : AbstractProcessor() {
         var hasError = isInaccessibleViaGeneratedCode(annotationClass, "methods", element)
         hasError = hasError or isBindingInWrongPackage(annotationClass, element)
         val duplicateId = findDuplicate(ids)
-        if (duplicateId != null) {
-            error(element, "@%s annotation for method contains duplicate ID %d. (%s.%s)",
-                    annotationClass.simpleName, duplicateId, enclosingElement.qualifiedName,
-                    element.getSimpleName())
-            hasError = true
-        }
+        if (duplicateId != null) hasError = true
         val listener = annotationClass.getAnnotation(ListenerClass::class.java)
                 ?: throw IllegalStateException(String.format("No @%s defined on @%s.", ListenerClass::class.java.simpleName,
                         annotationClass.simpleName))
         for (id in ids) {
             if (id == NO_ID.value) {
                 if (ids.size == 1) {
-                    if (!required) {
-                        error(element, "ID-free binding must not be annotated with @Optional. (%s.%s)",
-                                enclosingElement.qualifiedName, element.getSimpleName())
-                        hasError = true
-                    }
+                    hasError = !required
                 } else {
-                    error(element, "@%s annotation contains invalid ID %d. (%s.%s)",
-                            annotationClass.simpleName, id, enclosingElement.qualifiedName,
-                            element.getSimpleName())
                     hasError = true
                 }
             }
@@ -1075,12 +975,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
 
         // Verify that the method has equal to or less than the number of parameters as the listener.
         val methodParameters = executableElement.parameters
-        if (methodParameters.size > method.parameters.size) {
-            error(element, "@%s methods can have at most %s parameter(s). (%s.%s)",
-                    annotationClass.simpleName, method.parameters.size,
-                    enclosingElement.qualifiedName, element.getSimpleName())
-            hasError = true
-        }
+        hasError = methodParameters.size > method.parameters.size
 
         // Verify method return type matches the listener.
         var returnType = executableElement.returnType
@@ -1090,9 +985,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
         val returnTypeString = returnType.toString()
         val hasReturnValue = "void" != returnTypeString
         if (returnTypeString != method.returnType && hasReturnValue) {
-            error(element, "@%s methods must have a '%s' return type. (%s.%s)",
-                    annotationClass.simpleName, method.returnType,
-                    enclosingElement.qualifiedName, element.getSimpleName())
             hasError = true
         }
         if (hasError) {
@@ -1166,8 +1058,6 @@ class ButterKnifeProcessor : AbstractProcessor() {
         val resourceIds = elementToIds(element, annotationClass, ids)
         for ((key, value) in resourceIds) {
             if (!builder.addMethod(value, listener, method, binding)) {
-                error(element, "Multiple listener methods with return value specified for ID %d. (%s.%s)",
-                        key, enclosingElement.qualifiedName, element.getSimpleName())
                 return
             }
         }
@@ -1181,8 +1071,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
                 && typeMirror.asElement().kind == ElementKind.INTERFACE)
     }
 
-    private fun getOrCreateBindingBuilder(
-            builderMap: MutableMap<TypeElement, BindingSet.Builder>, enclosingElement: TypeElement): BindingSet.Builder {
+    private fun getOrCreateBindingBuilder(builderMap: MutableMap<TypeElement, BindingSet.Builder>, enclosingElement: TypeElement): BindingSet.Builder {
         var builder = builderMap[enclosingElement]
         if (builder == null) {
             builder = BindingSet.newBuilder(enclosingElement)
@@ -1273,21 +1162,21 @@ class ButterKnifeProcessor : AbstractProcessor() {
         return SourceVersion.latestSupported()
     }
 
-    private fun error(element: Element, message: String, vararg args: Any?) {
-        printMessage(Diagnostic.Kind.ERROR, element, message, args)
-    }
+//    private fun error(element: Element, message: String, vararg args: Any?) {
+//        printMessage(Diagnostic.Kind.ERROR, element, message, args)
+//    }
 
-    private fun note(element: Element, message: String, vararg args: Any) {
-        printMessage(Diagnostic.Kind.NOTE, element, message, args)
-    }
-
-    private fun printMessage(kind: Diagnostic.Kind, element: Element, message: String, vararg args: Any?) {
-        var localMessage: String = message
-        if (!args.isNullOrEmpty()) {
-            localMessage = String.format(localMessage, *args)
-        }
-        processingEnv.messager.printMessage(kind, localMessage, element)
-    }
+//    private fun note(element: Element, message: String, vararg args: Any) {
+//        printMessage(Diagnostic.Kind.NOTE, element, message, args)
+//    }
+//
+//    private fun printMessage(kind: Diagnostic.Kind, element: Element, message: String, vararg args: Any?) {
+//        var localMessage: String = message
+//        if (!args.isNullOrEmpty()) {
+//            localMessage = String.format(localMessage, *args)
+//        }
+//        processingEnv.messager.printMessage(kind, localMessage, element)
+//    }
 
     private fun elementToId(element: Element, annotation: Class<out Annotation?>, value: Int): Id? {
         val tree = trees.getTree(element, getMirror(element, annotation)) as JCTree

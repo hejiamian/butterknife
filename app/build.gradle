@@ -41,6 +41,7 @@ dependencies {
     testImplementation deps.junit
 
     implementation project(':butterknife-annotations-kotlin')
+    implementation project(':butterknife-runtime-kotlin')
     kapt project(':butterknife-compiler-kotlin')
 
     androidTestImplementation 'com.android.support.test:runner:1.0.2'

@@ -1,3 +1,5 @@
+include ':butterknife-runtime-kotlin'
+include ':butterknife-lint-kotlin'
 include ':app'
 include ':butterknife-compiler-kotlin'
 include ':butterknife-annotations-kotlin'

@@ -14,22 +14,22 @@ import butterknife.OnLongClick
 
 class MainActivity : AppCompatActivity() {
     @BindView(R.id.title)
-    var title: TextView? = null
+    lateinit var title: TextView
 
     @BindView(R.id.subtitle)
-    var subtitle: TextView? = null
+    lateinit var subtitle: TextView
 
     @BindView(R.id.hello)
-    var hello: Button? = null
+    lateinit var hello: Button
 
     @BindView(R.id.list_of_things)
-    var listOfThings: ListView? = null
+    lateinit var listOfThings: ListView
 
     @BindView(R.id.footer)
-    var footer: TextView? = null
+    lateinit var footer: TextView
 
     @BindViews(R.id.title, R.id.subtitle, R.id.hello)
-    var headerViews: List<View>? = null
+    lateinit var headerViews: List<View>
 
     @OnClick(R.id.hello)
     fun sayHello() {
@@ -45,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
+        MainActivity_ViewBinding(this)
+        subtitle.text = "MainActivity_ViewBinding"
     }
 }

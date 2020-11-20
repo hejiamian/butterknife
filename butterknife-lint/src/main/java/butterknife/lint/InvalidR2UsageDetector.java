@@ -29,8 +29,7 @@ public class InvalidR2UsageDetector extends Detector implements Detector.UastSca
   private static final String LINT_ERROR_BODY = "R2 should only be used inside annotations";
   private static final String LINT_ERROR_TITLE = "Invalid usage of R2";
   private static final String ISSUE_ID = "InvalidR2Usage";
-  private static final Set<String> SUPPORTED_TYPES =
-      ImmutableSet.of("array", "attr", "bool", "color", "dimen", "drawable", "id", "integer",
+  private static final Set<String> SUPPORTED_TYPES = ImmutableSet.of("array", "attr", "bool", "color", "dimen", "drawable", "id", "integer",
           "string");
 
   static final Issue ISSUE =
