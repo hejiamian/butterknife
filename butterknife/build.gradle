@@ -30,12 +30,12 @@ android {
 }
 
 dependencies {
-  api project(':butterknife-runtime')
+  api project(':butterknife-runtime-kotlin')
 
   androidTestImplementation deps.junit
   androidTestImplementation deps.truth
   androidTestImplementation deps.androidx.test.runner
-  androidTestAnnotationProcessor project(':butterknife-compiler')
+  androidTestAnnotationProcessor project(':butterknife-compiler-kotlin')
 }
 
 apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
