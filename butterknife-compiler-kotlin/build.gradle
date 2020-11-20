@@ -2,7 +2,6 @@ plugins {
     id 'java-library'
     id 'kotlin'
     id 'kotlin-kapt'
-    id 'kotlin-android-extensions'
     id 'checkstyle'
 }
 
@@ -15,8 +14,9 @@ dependencies {
     implementation project(':butterknife-annotations-kotlin')
     implementation deps.auto.common
     implementation deps.guava
-    api deps.javapoet
-    compileOnly deps.auto.service
+    implementation deps.kotlin.runtime
+    implementation deps.javapoet
+    implementation deps.auto.service
     kapt deps.auto.service
     compileOnly files(org.gradle.internal.jvm.Jvm.current().getToolsJar())
 

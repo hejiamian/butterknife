@@ -2,13 +2,12 @@ plugins {
     id 'java-library'
     id 'kotlin'
     id 'kotlin-kapt'
-    id 'kotlin-android-extensions'
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.3.61'
-    api deps.androidx.annotations
+    implementation deps.kotlin.runtime
+    implementation deps.androidx.annotations
 }
 
 java {
@@ -16,4 +15,4 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-//pply from: rootProject.file('gradle/gradle-mvn-push.gradle')
+//apply from: rootProject.file('gradle/gradle-mvn-push.gradle')

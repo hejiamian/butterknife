@@ -22,7 +22,7 @@ import kotlin.let
 import kotlin.reflect.KClass
 import kotlin.toString
 
-class BindingSet(private val targetTypeName: TypeName?, private val bindingClassName: ClassName?,
+class BindingSet(private val targetTypeName: TypeName?, private val bindingClassName: ClassName,
                  private val enclosingElement: TypeElement?, private val isFinal: Boolean,
                  private val isView: Boolean, private val isActivity: Boolean, private val isDialog: Boolean,
                  private val viewBindings: ImmutableList<ViewBinding>,
@@ -121,13 +121,13 @@ class BindingSet(private val targetTypeName: TypeName?, private val bindingClass
         }
     }
 
-    override fun getBindingClassName(): ClassName? {
+    override fun getBindingClassName(): ClassName {
         return bindingClassName
     }
 
-    fun brewJava(sdk: Int, debuggable: Boolean): JavaFile? {
+    fun brewJava(sdk: Int, debuggable: Boolean): JavaFile {
         val bindingConfiguration = createType(sdk, debuggable)
-        return JavaFile.builder(bindingClassName!!.packageName(), bindingConfiguration)
+        return JavaFile.builder(bindingClassName.packageName(), bindingConfiguration)
                 .addFileComment("Generated code from Butter Knife. Do not modify!")
                 .build()
     }
@@ -460,7 +460,7 @@ class BindingSet(private val targetTypeName: TypeName?, private val bindingClass
                         val listenerParameters: Array<String> = method.parameters
                         var i = 0
 
-                        parameters?.forEach {
+                        parameters.forEach {
                             if (i > 0) {
                                 builder.add(", ")
                             }
@@ -588,7 +588,7 @@ class BindingSet(private val targetTypeName: TypeName?, private val bindingClass
         return bindingClassName.toString()
     }
 
-    class Builder(private val targetTypeName: TypeName?, private val bindingClassName: ClassName?,
+    class Builder(private val targetTypeName: TypeName?, private val bindingClassName: ClassName,
                   private val enclosingElement: TypeElement?, private val isFinal: Boolean,
                   private val isView: Boolean, private val isActivity: Boolean, private val isDialog: Boolean) {
 

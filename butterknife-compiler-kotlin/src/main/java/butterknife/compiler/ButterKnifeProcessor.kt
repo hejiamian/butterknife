@@ -6,9 +6,12 @@ import butterknife.internal.Constants
 import butterknife.internal.ListenerClass
 import butterknife.internal.ListenerMethod
 import com.google.auto.common.SuperficialValidation
+import com.google.auto.service.AutoService
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.ImmutableSet
+import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.TypeName
+import com.squareup.javapoet.TypeSpec
 import com.sun.source.util.Trees
 import com.sun.tools.javac.code.Symbol
 import com.sun.tools.javac.code.Symbol.VarSymbol
@@ -16,26 +19,26 @@ import com.sun.tools.javac.code.Type.JCPrimitiveType
 import com.sun.tools.javac.tree.JCTree
 import com.sun.tools.javac.tree.JCTree.*
 import com.sun.tools.javac.tree.TreeScanner
+import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType
 import java.io.IOException
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.lang.reflect.Field
 import java.util.*
-import javax.annotation.processing.AbstractProcessor
-import javax.annotation.processing.Filer
-import javax.annotation.processing.ProcessingEnvironment
-import javax.annotation.processing.RoundEnvironment
+import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.*
 import javax.lang.model.type.*
 import javax.lang.model.util.Types
 import javax.tools.Diagnostic
 
+@AutoService(Processor::class)
+@IncrementalAnnotationProcessor(IncrementalAnnotationProcessorType.DYNAMIC)
 class ButterKnifeProcessor : AbstractProcessor() {
     private var typeUtils: Types? = null
     private var filer: Filer? = null
-    private var trees: Trees? = null
+    private lateinit var trees: Trees
 
     private var sdk = 1
     private var debuggable = true
@@ -211,7 +214,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
     override fun getSupportedOptions(): Set<String>? {
         val builder = ImmutableSet.builder<String>()
         builder.add(OPTION_SDK_INT, OPTION_DEBUGGABLE)
-        if (trees != null) builder.add(IncrementalAnnotationProcessorType.ISOLATING.processorOption)
+        builder.add(IncrementalAnnotationProcessorType.ISOLATING.processorOption)
         return builder.build()
     }
 
@@ -244,10 +247,11 @@ class ButterKnifeProcessor : AbstractProcessor() {
 
     override fun process(elements: Set<TypeElement?>?, env: RoundEnvironment): Boolean {
         val bindingMap: Map<TypeElement, BindingSet> = findAndParseTargets(env)
+
         for ((typeElement, binding) in bindingMap) {
             val javaFile = binding.brewJava(sdk, debuggable)
             try {
-                javaFile!!.writeTo(filer)
+                javaFile.writeTo(filer)
             } catch (e: IOException) {
                 error(typeElement, "Unable to write binding for type %s: %s", typeElement, e.message)
             }
@@ -529,7 +533,7 @@ class ButterKnifeProcessor : AbstractProcessor() {
         val name = simpleName.toString()
         val type = TypeName.get(elementType)
         val required: Boolean = ButterKnifeProcessor.isFieldRequired(element)
-        builder!!.addField(resourceId!!, FieldViewBinding(name, type, required))
+        builder.addField(resourceId!!, FieldViewBinding(name, type, required))
 
         // Add the type-erased version to the valid binding targets set.
         erasedTargetNames.add(enclosingElement)
@@ -1117,47 +1121,50 @@ class ButterKnifeProcessor : AbstractProcessor() {
                         break
                     }
                 }
+
+                /**
+                 *
                 if (parameters[i] == null) {
-                    val builder = java.lang.StringBuilder()
-                    builder.append("Unable to match @")
-                            .append(annotationClass.simpleName)
-                            .append(" method arguments. (")
-                            .append(enclosingElement.qualifiedName)
-                            .append('.')
-                            .append(element.getSimpleName())
-                            .append(')')
-                    for (j in parameters.indices) {
-                        val parameter = parameters[j]
-                        builder.append("\n\n  Parameter #")
-                                .append(j + 1)
-                                .append(": ")
-                                .append(methodParameters[j].asType().toString())
-                                .append("\n    ")
-                        if (parameter == null) {
-                            builder.append("did not match any listener parameters")
-                        } else {
-                            builder.append("matched listener parameter #")
-                                    .append(parameter.listenerPosition + 1)
-                                    .append(": ").append(parameter.type)
-                        }
-                    }
-                    builder.append("\n\nMethods may have up to ")
-                            .append(method.parameters.size)
-                            .append(" parameter(s):\n")
-                    for (parameterType in method.parameters) {
-                        builder.append("\n  ").append(parameterType)
-                    }
-                    builder.append(
-                            "\n\nThese may be listed in any order but will be searched for from top to bottom.")
-                    error(executableElement, builder.toString())
-                    return
+                val builder = java.lang.StringBuilder()
+                builder.append("Unable to match @")
+                .append(annotationClass.simpleName)
+                .append(" method arguments. (")
+                .append(enclosingElement.qualifiedName)
+                .append('.')
+                .append(element.getSimpleName())
+                .append(')')
+                for (j in parameters.indices) {
+                val parameter = parameters[j]
+                builder.append("\n\n  Parameter #")
+                .append(j + 1)
+                .append(": ")
+                .append(methodParameters[j].asType().toString())
+                .append("\n    ")
+                if (parameter == null) {
+                builder.append("did not match any listener parameters")
+                } else {
+                builder.append("matched listener parameter #")
+                .append(parameter.listenerPosition + 1)
+                .append(": ").append(parameter.type)
                 }
+                }
+                builder.append("\n\nMethods may have up to ")
+                .append(method.parameters.size)
+                .append(" parameter(s):\n")
+                for (parameterType in method.parameters) {
+                builder.append("\n  ").append(parameterType)
+                }
+                builder.append(
+                "\n\nThese may be listed in any order but will be searched for from top to bottom.")
+                error(executableElement, builder.toString())
+                return
+                }*/
             }
         }
         val binding = MethodViewBinding(name, parameters, required, hasReturnValue)
         val builder: BindingSet.Builder = getOrCreateBindingBuilder(builderMap, enclosingElement)
         val resourceIds = elementToIds(element, annotationClass, ids)
-        for ((key, value) in resourceIds!!) {
+        for ((key, value) in resourceIds) {
             if (!builder.addMethod(value, listener, method, binding)) {
                 error(element, "Multiple listener methods with return value specified for ID %d. (%s.%s)",
                         key, enclosingElement.qualifiedName, element.getSimpleName())
@@ -1275,39 +1282,40 @@ class ButterKnifeProcessor : AbstractProcessor() {
     }
 
     private fun printMessage(kind: Diagnostic.Kind, element: Element, message: String, vararg args: Any?) {
-        var message: String = message
+        var localMessage: String = message
         if (!args.isNullOrEmpty()) {
-            message = String.format(message, *args)
+            localMessage = String.format(localMessage, *args)
         }
-        processingEnv.messager.printMessage(kind, message, element)
+        processingEnv.messager.printMessage(kind, localMessage, element)
     }
 
     private fun elementToId(element: Element, annotation: Class<out Annotation?>, value: Int): Id? {
-        val tree = trees?.getTree(element, getMirror(element, annotation)) as JCTree
-        tree?.let { // tree can be null if the references are compiled types and not source
-            rScanner.reset()
-            it.accept(rScanner)
-            if (!rScanner.resourceIds.isEmpty()) {
-                return rScanner.resourceIds.values.iterator().next()
-            }
-        }
+        val tree = trees.getTree(element, getMirror(element, annotation)) as JCTree
+        // tree can be null if the references are compiled types and not source
+        rScanner.reset()
+        tree.accept(rScanner)
+        if (rScanner.resourceIds.isNotEmpty()) return rScanner.resourceIds.values.iterator().next()
         return Id(value)
     }
 
     private fun elementToIds(element: Element, annotation: Class<out Annotation?>,
                              values: IntArray): MutableMap<Int, Id> {
-        var resourceIds: MutableMap<Int, Id> = mutableMapOf()
-        val tree = trees?.getTree(element, getMirror(element, annotation)) as JCTree
-        if (tree != null) { // tree can be null if the references are compiled types and not source
-            rScanner.reset()
-            tree.accept(rScanner)
-            resourceIds = rScanner.resourceIds
-        }
+        val tree = trees.getTree(element, getMirror(element, annotation)) as JCTree
+        // tree can be null if the references are compiled types and not source
+        rScanner.reset()
+        tree.accept(rScanner)
+        var resourceIds: MutableMap<Int, Id> = rScanner.resourceIds
+
 
         // Every value looked up should have an Id
-        for (value in values) {
-            resourceIds.putIfAbsent(value, Id(value))
+        try {
+            for (value in values) {
+                resourceIds.putIfAbsent(value, Id(value))
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
         }
+
         return resourceIds
     }
 
